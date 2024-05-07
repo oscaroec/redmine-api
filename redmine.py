@@ -17,7 +17,7 @@ def fetch_issues():
     url = f"{REDMINE_URL}/issues.json"
     params = {
         'status_id': '*',  # 獲取所有狀態的議題
-        'created_on': '><2024-03-01|2024-03-31',  # YYYY-MM-DD|YYYY-MM-DD
+        'created_on': '><2024-04-01|2024-04-30',  # YYYY-MM-DD|YYYY-MM-DD
         'offset': 0
     }
     while True:
@@ -50,8 +50,9 @@ def export_issues_with_notes():
             for journal in issue_details.get('journals', []):
                 if 'notes' in journal and journal['notes'].strip():
                     for detail in journal.get('details', []):
+                        name = detail.get('name', 'Unknown')
                         new_value = detail.get('new_value', 'Unknown')
-                        if new_value == '4':
+                        if name == 'status_id' and new_value == '4':    
                             writer.writerow([issue['id'], project_name, issue['created_on'], journal['id'], journal['notes'], new_value])                  
 
 # 執行匯出功能
