@@ -13,22 +13,31 @@ headers = {
 
 def fetch_issues():
     """ 從 Redmine 獲取所有議題列表 """
-    issues = []
+    
     url = f"{REDMINE_URL}/issues.json"
     params = {
-        'status_id': '*',  # 獲取所有狀態的議題
         'created_on': '><2024-04-01|2024-04-30',  # YYYY-MM-DD|YYYY-MM-DD
-        'offset': 0
+        'status_id': '*',
+        'limit': 100,  # 每次請求的最大議題數量
+        'offset': 0   # 分頁的起始點
     }
+
+    all_issues = []
+
     while True:
         response = requests.get(url, headers=headers, params=params, verify=False)
         data = response.json()
-        issues.extend(data['issues'])
-        if 'next' in data.keys():
-            params['offset'] += 20
-        else:
-            break
-    return issues
+        issues = data.get('issues', [])
+        all_issues.extend(issues)
+
+        # 檢查是否還有更多數據
+        if len(issues) < params['limit']:
+            break  # 如果返回的議題數少於限制值，則停止循環
+
+        # 更新 offset 以獲取下一頁數據
+        params['offset'] += params['limit']
+
+    return all_issues
 
 def fetch_issue_details(issue_id):
     """ 獲取單一議題的詳細資料，包括日誌記錄 """
@@ -47,6 +56,7 @@ def export_issues_with_notes():
         for issue in issues:
             issue_details = fetch_issue_details(issue['id'])
             project_name = issue['project']['name']
+            
             for journal in issue_details.get('journals', []):
                 if 'notes' in journal and journal['notes'].strip():
                     for detail in journal.get('details', []):
